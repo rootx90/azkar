@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام المهام الروتينية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-green: #10b981;
+            --primary-blue: #6366f1;
+            --secondary-bg: #f3f4f6; /* Lighter background */
+            --card-bg: #ffffff;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --progress-bg: #e5e7eb;
+            --white: #ffffff;
+            --border-color: #e2e8f0;
+            
+            --prayer-color: #8b5cf6;
+            --prayer-light: #f5f3ff;
+            --remembrance-color: #10b981;
+            --remembrance-light: #f0fdf4;
+            --quran-color: #a855f7;
+            --quran-light: #faf5ff;
+            --charity-color: #f97316;
+            --charity-light: #fff7ed;
+            --habits-color: #3b82f6;
+            --habits-light: #eff6ff;
+
+            --stat-green: #10b981;
+            --stat-purple: #8b5cf6;
+            --stat-orange: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: var(--secondary-bg);
+            color: var(--text-dark);
+            padding: 1rem;
+        }
+
+        .main-container {
+            max-width: 900px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        /* General Page & Toggle Styles */
+        .page { display: none; }
+        .page.active { display: flex; flex-direction: column; gap: 2rem; }
+        
+        /* Sticky Header */
+        .header {
+            background: linear-gradient(120deg, var(--primary-green), var(--primary-blue));
+            color: var(--white);
+            padding: 1rem 1.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            position: sticky;
+            top: 1rem;
+            z-index: 100;
+        }
+        
+        .header-content { display: flex; flex-direction: column; gap: 0.75rem; }
+        .header-top-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+        .header-date { font-size: 0.9rem; font-weight: bold; line-height: 1.4; }
+        .header-stats { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; font-weight: bold; }
+        .header-stats i { margin-left: 0.25rem; }
+        .progress-bar-container { background-color: rgba(0, 0, 0, 0.2); border-radius: 999px; height: 8px; overflow: hidden; }
+        .progress-bar { background-color: var(--white); height: 100%; width: 0%; border-radius: 999px; transition: width 0.5s ease-in-out; }
+        .page-toggle { display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; }
+        .toggle-btn { background-color: rgba(255, 255, 255, 0.2); color: var(--white); border: none; padding: 0.5rem 1rem; border-radius: 999px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; }
+        .toggle-btn.active { background-color: var(--white); color: var(--primary-blue); }
+
+        /* Main Page (Tasks) */
+        .task-categories { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem; }
+        .category-card, .task-list-container { background-color: var(--card-bg); padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+        .category-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--white); margin: auto; }
+        .category-info h3 { margin-top: 1rem; font-size: 1.125rem; font-weight: bold; }
+        .category-info p { color: var(--text-light); font-size: 0.875rem; }
+        .category-progress { margin-top: 1rem; }
+        .category-progress-bar { background-color: var(--progress-bg); border-radius: 999px; height: 6px; overflow: hidden; }
+        .category-progress-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease-in-out; }
+        .task-list-header { font-size: 1.25rem; font-weight: bold; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+        .task-list { display: flex; flex-direction: column; gap: 1rem; }
+        .task-item { padding: 1rem; border-radius: 0.75rem; display: flex; align-items: center; gap: 1rem; border: 1px solid var(--border-color); transition: all 0.2s ease-in-out; }
+        .task-checkbox { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--text-light); cursor: pointer; flex-shrink: 0; display: flex; justify-content: center; align-items: center; transition: all 0.2s ease-in-out; background-color: var(--white); }
+        .task-checkbox.checked { background-color: var(--primary-green); border-color: var(--primary-green); color: var(--white); }
+        .task-checkbox.checked::after { content: '✓'; font-weight: bold; }
+        .task-info { flex-grow: 1; }
+        .task-info p { font-size: 1rem; font-weight: bold; }
+        .task-info span { font-size: 0.875rem; color: var(--text-light); }
+        .task-points { padding: 0.25rem 0.75rem; border-radius: 999px; color: var(--white); font-weight: bold; font-size: 0.875rem; }
+        .prayer .category-icon, .prayer .category-progress-fill, .prayer .task-points { background-color: var(--prayer-color); }
+        .remembrance .category-icon, .remembrance .category-progress-fill, .remembrance .task-points { background-color: var(--remembrance-color); }
+        .quran .category-icon, .quran .category-progress-fill, .quran .task-points { background-color: var(--quran-color); }
+        .charity .category-icon, .charity .category-progress-fill, .charity .task-points { background-color: var(--charity-color); }
+        .habits .category-icon, .habits .category-progress-fill, .habits .task-points { background-color: var(--habits-color); }
+        .task-item.prayer { border-left: 4px solid var(--prayer-color); background-color: var(--prayer-light); }
+        .task-item.remembrance { border-left: 4px solid var(--remembrance-color); background-color: var(--remembrance-light); }
+        .task-item.quran { border-left: 4px solid var(--quran-color); background-color: var(--quran-light); }
+        .task-item.charity { border-left: 4px solid var(--charity-color); background-color: var(--charity-light); }
+        .task-item.habits { border-left: 4px solid var(--habits-color); background-color: var(--habits-light); }
+
+        /* Dashboard Page Styles */
+        .dashboard-header {
+            background: linear-gradient(120deg, var(--primary-green), var(--primary-blue));
+            color: var(--white);
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            text-align: center;
+        }
+        .dashboard-header h2 { font-size: 1.5rem; margin-bottom: 1rem; }
+        .period-toggle { display: flex; justify-content: center; gap: 0.5rem; }
+        .period-toggle button { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.3); color: var(--white); padding: 0.5rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
+        .period-toggle button.active { background: var(--white); color: var(--primary-blue); }
+
+        .dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+        .dashboard-stat-card { background-color: var(--card-bg); padding: 1.5rem; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-top: 4px solid; }
+        .dashboard-stat-card.green { border-color: var(--stat-green); }
+        .dashboard-stat-card.purple { border-color: var(--stat-purple); }
+        .dashboard-stat-card.orange { border-color: var(--stat-orange); }
+        .stat-card-header { display: flex; align-items: center; gap: 0.5rem; font-weight: bold; font-size: 1.1rem; }
+        .stat-card-header.green { color: var(--stat-green); }
+        .stat-card-header.purple { color: var(--stat-purple); }
+        .stat-card-header.orange { color: var(--stat-orange); }
+        .stat-card-body { margin-top: 1rem; }
+        .stat-card-body .value { font-size: 2.25rem; font-weight: bold; color: var(--text-dark); }
+        .stat-card-body .label { font-size: 0.875rem; color: var(--text-light); }
+        
+        .daily-progress-card { background-color: #F0FDF4; border: 1px solid var(--stat-green); padding: 1.5rem; border-radius: 1rem; }
+        .daily-progress-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1rem; margin-bottom: 1rem; }
+        .daily-progress-body { display: flex; justify-content: space-between; align-items: center; font-size: 1rem; }
+        .daily-progress-body .date { line-height: 1.4; }
+        .daily-progress-body .points { text-align: left; }
+        .daily-progress-footer { margin-top: 1rem; }
+        
+        .app-footer { text-align: center; margin-top: 1rem; padding: 1rem; color: var(--text-light); font-size: 1rem; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <header class="header">
+            <div class="header-content">
+                <div class="header-top-row">
+                    <div class="header-date" id="date-display"></div>
+                    <div class="header-stats">
+                        <span id="total-points-display"><i class="fas fa-star"></i> 0 / 0</span>
+                        <span id="tasks-completed-display"><i class="fas fa-check-circle"></i> 0 / 0</span>
+                    </div>
+                </div>
+                <div class="header-progress">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="overall-progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-toggle">
+                <button class="toggle-btn active" data-page="main">المهام اليومية</button>
+                <button class="toggle-btn" data-page="dashboard">لوحة التحكم</button>
+            </div>
+        </header>
+
+        <main id="main-page" class="page active">
+            <section class="task-categories" id="task-categories"></section>
+            <div class="task-list-container">
+                <h2 class="task-list-header">التقدم اليومي - Daily Progress</h2>
+                <section class="task-list" id="task-list"></section>
+            </div>
+        </main>
+        
+        <main id="dashboard-page" class="page">
+            <div class="dashboard-header">
+                <h2>Spiritual Progress Dashboard</h2>
+                <div class="period-toggle">
+                    <button class="period-btn active" data-period="week">الأسبوع الماضي</button>
+                    <button class="period-btn" data-period="month">الشهر الماضي</button>
+                </div>
+            </div>
+            <div class="dashboard-stats" id="dashboard-stats">
+                </div>
+            <div class="daily-progress-card">
+                <div class="daily-progress-header">
+                    <span>التقدم اليومي - Daily Progress</span>
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div class="daily-progress-body">
+                    <div class="date" id="daily-card-date"></div>
+                    <div class="points">
+                        <strong id="daily-card-points">0/0</strong>
+                        <div id="daily-card-tasks" style="font-size: 0.9rem; color: var(--text-light)">0/0 مهام</div>
+                    </div>
+                </div>
+                <div class="daily-progress-footer">
+                    <div class="progress-bar-container" style="background-color: #bbf7d0;">
+                         <div class="progress-bar" id="daily-card-progress" style="background-color: var(--stat-green);"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            نهايه كل هذا سنكون فرحين بما آتاهم الله من فضله... ❤️
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Data
+            const tasksData = {
+                prayer: [ { id: 'prayer_time', text: 'الصلاه في وقتها + السنن الرواتب', points: 15 }, { id: 'duha', text: 'صلاه الضحى', points: 8 }, { id: 'witr', text: 'الوتر ❤️', points: 10 }, { id: 'sleep_remembrance', text: 'اذكار النوم', points: 5 } ],
+                remembrance: [ { id: 'morning_evening', text: 'أذكار الصباح والمساء', points: 10 }, { id: 'double_remembrance', text: 'الذكر المضاعف', points: 5 }, { id: 'forgiveness', text: 'الإستغفار «وقت السحر»', points: 7 }, { id: 'crown_remembrance', text: 'تاج الذكر', points: 5 }, { id: 'hawqala', text: 'الحوقلة', points: 5 }, { id: 'ibrahimiyyah', text: 'الصلاه الإبراهيميه «بعد صلاه الوتر»', points: 7 }, { id: 'good_deeds', text: 'الباقيات الصالحات «قبل غروب الشمس»', points: 5 }, { id: 'adhan_supplication', text: 'الدعاء بين الأذان والإقامه', points: 5 } ],
+                quran: [ { id: 'memorize_review', text: 'مراجعه حفظي الجديد', points: 12 }, { id: 'baqarah', text: 'سورة البقرة ❤️', points: 20 }, { id: 'ikhlas', text: 'سوره الإخلاص ٣ مرات', points: 5 } ],
+                charity: [ { id: 'charity_task', text: 'الصدقه', points: 10 } ],
+                habits: [ { id: 'podcast', text: 'بودكاست استماع', points: 3 }, { id: 'walk', text: 'امشي ساعه', points: 5 } ]
+            };
+            const categories = {
+                prayer: { name: 'الصلاة', name_en: 'Prayer', icon: 'fa-mosque', class: 'prayer' }, remembrance: { name: 'الذكر', name_en: 'Remembrance', icon: 'fa-heart', class: 'remembrance' }, quran: { name: 'القرآن', name_en: 'Quran', icon: 'fa-book-quran', class: 'quran' }, charity: { name: 'الصدقة', name_en: 'Charity', icon: 'fa-hand-holding-heart', class: 'charity' }, habits: { name: 'عادات', name_en: 'Habits', icon: 'fa-person-walking', class: 'habits' }
+            };
+
+            // DOM Elements
+            const mainPage = document.getElementById('main-page'), dashboardPage = document.getElementById('dashboard-page');
+            const toggleButtons = document.querySelectorAll('.toggle-btn');
+            const periodButtons = document.querySelectorAll('.period-btn');
+            const taskListContainer = document.getElementById('task-list');
+            const dateDisplayEl = document.getElementById('date-display');
+            
+            // State
+            let appState = {}, history = {};
+            let activePeriod = 'week';
+
+            // Functions
+            const getTodayKey = () => new Date().toISOString().split('T')[0];
+
+            function loadState() {
+                const todayKey = getTodayKey();
+                const savedState = localStorage.getItem(todayKey);
+                history = JSON.parse(localStorage.getItem('routine-app-history')) || {};
+                
+                if (savedState) {
+                    appState = JSON.parse(savedState);
+                } else {
+                    appState = {};
+                    Object.values(tasksData).flat().forEach(task => { appState[task.id] = { completed: false }; });
+                }
+            }
+
+            function saveState() {
+                const todayKey = getTodayKey();
+                const stats = calculateStats();
+                history[todayKey] = { points: stats.currentPoints, completed: stats.completedCount, total: stats.totalCount };
+                
+                localStorage.setItem(todayKey, JSON.stringify(appState));
+                localStorage.setItem('routine-app-history', JSON.stringify(history));
+            }
+            
+            function calculateStats() {
+                let currentPoints = 0, maxPoints = 0, completedCount = 0, totalCount = 0;
+                Object.values(tasksData).flat().forEach(task => {
+                    if (appState[task.id]?.completed) {
+                        currentPoints += task.points;
+                        completedCount++;
+                    }
+                    maxPoints += task.points;
+                    totalCount++;
+                });
+                return { currentPoints, maxPoints, completedCount, totalCount };
+            }
+
+            function updateMainPageUI() {
+                const stats = calculateStats();
+                const progressPercentage = stats.totalCount > 0 ? (stats.completedCount / stats.totalCount) * 100 : 0;
+                
+                // Render Categories
+                document.getElementById('task-categories').innerHTML = Object.keys(categories).map(key => {
+                     const tasks = tasksData[key] || []; if (tasks.length === 0) return '';
+                     const completed = tasks.filter(t => appState[t.id]?.completed).length, total = tasks.length, progress = total > 0 ? (completed / total) * 100 : 0;
+                     return `<div class="category-card ${categories[key].class}"><div class="category-icon"><i class="fas ${categories[key].icon}"></i></div><div class="category-info"><h3>${categories[key].name}</h3><p>مكتمل ${completed}/${total}</p></div><div class="category-progress"><div class="category-progress-bar"><div class="category-progress-fill" style="width: ${progress}%"></div></div></div></div>`;
+                }).join('');
+                
+                // Render Tasks
+                taskListContainer.innerHTML = Object.keys(tasksData).map(key => tasksData[key].map(task => {
+                    const completed = appState[task.id]?.completed || false;
+                    return `<div class="task-item ${categories[key].class}" data-id="${task.id}"><div class="task-checkbox ${completed ? 'checked' : ''}"></div><div class="task-info"><p>${task.text}</p><span>${categories[key].name_en}</span></div><div class="task-points">${task.points} pts</div></div>`;
+                }).join('')).join('');
+                
+                // Update Header
+                document.getElementById('total-points-display').innerHTML = `<i class="fas fa-star"></i> ${stats.currentPoints} / ${stats.maxPoints}`;
+                document.getElementById('tasks-completed-display').innerHTML = `<i class="fas fa-check-circle"></i> ${stats.completedCount} / ${stats.totalCount}`;
+                document.getElementById('overall-progress-bar').style.width = `${progressPercentage}%`;
+            }
+
+            function renderDashboard(period) {
+                const days = period === 'week' ? 7 : 30;
+                const historicalKeys = Object.keys(history).sort().slice(-days);
+                const historicalData = historicalKeys.map(key => ({...history[key], date: key}));
+                
+                let totalPoints = 0, totalCompletion = 0, bestDay = { percent: -1, date: null, value: 0 };
+                
+                historicalData.forEach(day => {
+                    totalPoints += day.points;
+                    const percent = day.total > 0 ? (day.completed / day.total) * 100 : 0;
+                    totalCompletion += percent;
+                    if (percent > bestDay.percent) {
+                        bestDay = { percent, date: day.date, value: `${percent.toFixed(0)}%` };
+                    }
+                });
+
+                const avgCompletion = historicalData.length > 0 ? totalCompletion / historicalData.length : 0;
+
+                document.getElementById('dashboard-stats').innerHTML = `
+                    <div class="dashboard-stat-card green"><div class="stat-card-header green"><i class="fas fa-star"></i><span>مجموع النقاط</span></div><div class="stat-card-body"><p class="value">${totalPoints}</p><span class="label">Total Points Earned</span></div></div>
+                    <div class="dashboard-stat-card purple"><div class="stat-card-header purple"><i class="fas fa-chart-line"></i><span>متوسط الإنجاز</span></div><div class="stat-card-body"><p class="value">${avgCompletion.toFixed(0)}%</p><span class="label">Average Completion</span></div></div>
+                    <div class="dashboard-stat-card orange"><div class="stat-card-header orange"><i class="fas fa-user-check"></i><span>أفضل يوم</span></div><div class="stat-card-body"><p class="value">${bestDay.value}</p><span class="label">${bestDay.date ? new Date(bestDay.date).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'}) : 'No Data'}</span></div></div>
+                `;
+                
+                // Update Daily Progress Card
+                const todayStats = calculateStats();
+                const todayProgress = todayStats.totalCount > 0 ? (todayStats.completedCount / todayStats.totalCount) * 100 : 0;
+                document.getElementById('daily-card-date').innerHTML = dateDisplayEl.innerHTML;
+                document.getElementById('daily-card-points').textContent = `${todayStats.currentPoints}/${todayStats.maxPoints}`;
+                document.getElementById('daily-card-tasks').textContent = `${todayStats.completedCount}/${todayStats.totalCount} مهام`;
+                document.getElementById('daily-card-progress').style.width = `${todayProgress}%`;
+            }
+
+            function setDate() {
+                const today = new Date();
+                const gregorianDate = today.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
+                const hijriDate = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { year: 'numeric', month: 'long', day: 'numeric' }).format(today);
+                dateDisplayEl.innerHTML = `${gregorianDate}<br>${hijriDate}`;
+            }
+            
+            // Event Listeners
+            toggleButtons.forEach(button => button.addEventListener('click', () => {
+                const page = button.dataset.page;
+                mainPage.classList.toggle('active', page === 'main');
+                dashboardPage.classList.toggle('active', page === 'dashboard');
+                toggleButtons.forEach(btn => btn.classList.toggle('active', btn === button));
+                if (page === 'dashboard') renderDashboard(activePeriod);
+            }));
+
+            periodButtons.forEach(button => button.addEventListener('click', () => {
+                activePeriod = button.dataset.period;
+                periodButtons.forEach(btn => btn.classList.toggle('active', btn === button));
+                renderDashboard(activePeriod);
+            }));
+
+            taskListContainer.addEventListener('click', (e) => {
+                const taskItem = e.target.closest('.task-item');
+                if (taskItem) {
+                    appState[taskItem.dataset.id].completed = !appState[taskItem.dataset.id].completed;
+                    saveState();
+                    updateMainPageUI();
+                }
+            });
+
+            // Initial Load
+            loadState();
+            setDate();
+            updateMainPageUI();
+        });
+    </script>
+</body>
+</html>
